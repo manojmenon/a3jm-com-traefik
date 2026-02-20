@@ -21,4 +21,9 @@ id_rsa
 
 # OS files
 .DS_Store
+
+# Wazuh indexer SSL certs (avoid committing generated certs)
+traefik/siem/wazuh/wazuh-docker/single-node/config/wazuh_indexer_ssl_certs/
+**/wazuh_indexer_ssl_certs/
+
 single-node/config/wazuh_indexer_ssl_certs
