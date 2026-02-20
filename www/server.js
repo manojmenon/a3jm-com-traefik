@@ -24,7 +24,7 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: 60 * 60 * 1000, // 1 hour, then re-login required
     },
   })
 );

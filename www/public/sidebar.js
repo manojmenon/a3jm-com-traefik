@@ -26,44 +26,48 @@
     }
   });
 
-  // Update user links in sidebar based on auth status
+  // Show Quick Links only when logged in; update user links in sidebar
   const userLinksContainer = document.getElementById("sidebar-user-links");
-  if (userLinksContainer) {
-    fetch("/api/me", { credentials: "same-origin" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.user) {
-          let html = '<div class="sidebar-divider">My Account</div>';
-          if (data.user.role === "admin") {
-            html += '<a href="/admin/dashboard" class="sidebar-nav-item">Admin Panel</a>';
-          } else {
-            html += '<a href="/student" class="sidebar-nav-item">My Area</a>';
-          }
-          html += '<a href="/" class="sidebar-nav-item btn-logout-sidebar">Logout</a>';
-          userLinksContainer.innerHTML = html;
+  const quickLinksSection = document.getElementById("sidebar-quicklinks");
 
-          // Add logout handler
-          const logoutBtn = userLinksContainer.querySelector(".btn-logout-sidebar");
-          if (logoutBtn) {
-            logoutBtn.addEventListener("click", function (e) {
-              e.preventDefault();
-              fetch("/api/logout", { method: "POST", credentials: "same-origin" }).then(() => {
-                window.location.reload();
-              });
-            });
-          }
+  function setSidebarAuth(data) {
+    const isLoggedIn = !!(data && data.user);
+    if (quickLinksSection) {
+      quickLinksSection.style.display = isLoggedIn ? "" : "none";
+    }
+    if (userLinksContainer) {
+      if (isLoggedIn) {
+        let html = '<div class="sidebar-divider">My Account</div>';
+        if (data.user.role === "admin") {
+          html += '<a href="/admin/dashboard" class="sidebar-nav-item">Admin Panel</a>';
         } else {
-          userLinksContainer.innerHTML =
-            '<div class="sidebar-divider">Account</div>' +
-            '<a href="/login" class="sidebar-nav-item">Login</a>' +
-            '<a href="/register" class="sidebar-nav-item">Register</a>';
+          html += '<a href="/student" class="sidebar-nav-item">My Area</a>';
         }
-      })
-      .catch(() => {
+        html += '<a href="/" class="sidebar-nav-item btn-logout-sidebar">Logout</a>';
+        userLinksContainer.innerHTML = html;
+
+        const logoutBtn = userLinksContainer.querySelector(".btn-logout-sidebar");
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            fetch("/api/logout", { method: "POST", credentials: "same-origin" }).then(() => {
+              window.location.reload();
+            });
+          });
+        }
+      } else {
         userLinksContainer.innerHTML =
           '<div class="sidebar-divider">Account</div>' +
           '<a href="/login" class="sidebar-nav-item">Login</a>' +
           '<a href="/register" class="sidebar-nav-item">Register</a>';
-      });
+      }
+    }
+  }
+
+  if (userLinksContainer || quickLinksSection) {
+    fetch("/api/me", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((data) => setSidebarAuth(data))
+      .catch(() => setSidebarAuth(null));
   }
 })();

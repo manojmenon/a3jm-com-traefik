@@ -26,5 +26,5 @@ certificatesResolvers:
     acme:
       email: admin@a3jm.com
       storage: /etc/traefik/acme/acme.json
-      httpChallenge:
-        entryPoint: web
+      # TLS-ALPN-01 uses port 443 so cert issuance works even when port 80 redirects to HTTPS
+      tlsChallenge: {}

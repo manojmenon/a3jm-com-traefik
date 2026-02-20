@@ -125,15 +125,10 @@ http:
         certResolver: letsencrypt
       priority: 50
 
-    # Pi-hole via subdomain (cleaner than path-based, avoids conflicts)
-    pihole-dashboard:
-      rule: "Host(`pihole.a3jm.com`)"
-      service: pihole
-      entryPoints:
-        - websecure
-      tls:
-        certResolver: letsencrypt
-    
+    # Pi-hole subdomain (pihole.a3jm.com) disabled – no DNS record causes ACME NXDOMAIN + rate limit.
+    # Use https://a3jm.com/pihole/ instead (path-based, uses a3jm.com cert).
+    # Re-enable when pihole.a3jm.com has an A/CNAME record and rate limit has expired.
+
     # Path-based Pi-hole access - catch Pi-hole API and redirects first (highest priority)
     # Catch Pi-hole API calls (/api/* but exclude our www app's /api/login, /api/register, etc. and Traefik API paths)
     pihole-api:
