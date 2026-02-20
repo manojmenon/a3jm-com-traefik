@@ -1,0 +1,302 @@
+
+# https://www.hostinger.com/tutorials/how-to-use-ansible-to-install-docker?utm_campaign=Generic-Tutorials-DSA|NT:Se|LO:Other-EU&utm_medium=ppc&gad_source=1&gad_campaignid=12231291749&gbraid=0AAAAADMy-hbLHQh3SCgFf_--EQLLNE2LM&gclid=Cj0KCQjw-4XFBhCBARIsAAdNOksxa1I4gYthvhOPBKekWRXiDpQGQyvWRnoy5mBw2BWeOVWOf8c-2v8aAnCBEALw_wcB
+
+- name: Install Docker on Ubuntu
+  hosts: local
+  become: true
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: true
+
+    - name: Add Docker’s official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+    
+    - name: Install Docker Compose
+      get_url:
+        url: https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Install Kind (Kubernetes in Docker)
+      get_url:
+        url: https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+        dest: /usr/local/bin/kind
+        mode: '0755'
+
+    - name: Install kubectl for Kubernetes management
+      get_url:
+        url: https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+
+    - name: Install Cilium CLI
+      shell: |
+        curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/latest/download/cilium-linux-amd64.tar.gz{,.sha256sum}
+        sha256sum --check cilium-linux-amd64.tar.gz.sha256sum
+        sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
+        rm cilium-linux-amd64.tar.gz*
+      args:
+        creates: /usr/local/bin/cilium
+
+    - name: Install Helm
+      shell: |
+        curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz | tar xz
+        sudo mv linux-amd64/helm /usr/local/bin/
+        rm -rf linux-amd64
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Create Kind configuration directory
+      file:
+        path: /home/manojmenon/kind
+        state: directory
+        mode: '0755'
+
+    - name: Create Kind configuration file
+      copy:
+        dest: /home/manojmenon/kind/config.yaml
+        content: |
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          networking:
+            disableDefaultCNI: true
+          nodes:
+          - role: control-plane
+            extraPortMappings:
+            - containerPort: 80
+              hostPort: 8080
+            - containerPort: 443
+              hostPort: 8443
+          - role: worker
+          - role: worker
+        mode: '0644'
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Install Certbot and python3-certbot-nginx
+      apt:
+        name:
+          - certbot
+          - python3-certbot-nginx
+        state: present
+        update_cache: true
+
+    # ...existing code...
+
+    - name: Create Nginx server block for www.a3jm.com
+      copy:
+        dest: /etc/nginx/sites-available/www.a3jm.com
+        content: |
+          server {
+              listen 443 ssl;
+              server_name www.a3jm.com a3jm.com;
+              root /var/www/www.a3jm.com/html;
+              index index.html;
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+            ssl_certificate /etc/letsencrypt/live/www.a3jm.com/fullchain.pem;
+            ssl_certificate_key /etc/letsencrypt/live/www.a3jm.com/privkey.pem;
+            include /etc/letsencrypt/options-ssl-nginx.conf;
+            ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+          }
+        mode: '0644'
+
+    - name: Enable Nginx server block for www.a3jm.com
+      file:
+        src: /etc/nginx/sites-available/www.a3jm.com
+        dest: /etc/nginx/sites-enabled/www.a3jm.com
+        state: link
+
+    - name: Create Nginx server block for www.fatsmash.in
+      copy:
+        dest: /etc/nginx/sites-available/www.fatsmash.in
+        content: |
+          server {
+              listen 443 ssl;
+              server_name www.fatsmash.in fatsmash.in;
+              root /var/www/www.fatsmash.in/html;
+              index index.html;
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+              ssl_certificate /etc/letsencrypt/live/www.fatsmash.in/fullchain.pem;
+              ssl_certificate_key /etc/letsencrypt/live/www.fatsmash.in/privkey.pem;
+              include /etc/letsencrypt/options-ssl-nginx.conf;
+              ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+          }
+        mode: '0644'
+
+    - name: Enable Nginx server block for www.fatsmash.in
+      file:
+        src: /etc/nginx/sites-available/www.fatsmash.in
+        dest: /etc/nginx/sites-enabled/www.fatsmash.in
+        state: link
+
+   
+
+    - name: Obtain and install Let's Encrypt certificate for Nginx
+      command: >
+        certbot --nginx --non-interactive --agree-tos --redirect
+        -m manoj.menon@a3jm.com -d www.a3jm.com -d a3jm.com -d a3jm.com
+      args:
+        creates: /etc/letsencrypt/live/www.a3jm.com/fullchain.pem
+    
+    - name: Obtain and install Let's Encrypt certificate for Nginx
+      command: >
+        certbot --nginx --non-interactive --agree-tos --redirect
+        -m manoj.menon@a3jm.com -d www.fatsmash.in -d fatsmash.in
+      args:
+        creates: /etc/letsencrypt/live/www.fatsmash.in/fullchain.pem
+    
+    - name: Copy custom index.html to Nginx web root
+      copy:
+        src: index.html
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Reload Nginx to apply changes
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: Run PostgreSQL in Docker
+      docker_container:
+        name: postgres
+        image: postgres:15
+        state: started
+        restart_policy: always
+        env:
+          POSTGRES_USER: myuser
+          POSTGRES_PASSWORD: mypassword
+          POSTGRES_DB: mydb
+        ports:
+          - "5432:5432"
+        volumes:
+          - pgdata:/var/lib/postgresql/data
+
+    - name: Create Kind Kubernetes cluster
+      command: kind create cluster --name demo-cluster --config /home/manojmenon/kind/config.yaml
+      args:
+        creates: /home/manojmenon/.kube/config
+      register: kind_cluster_result
+
+    - name: Display Kind cluster status
+      debug:
+        msg: "Kind cluster created successfully. Use 'kind get clusters' to see available clusters."
+      when: kind_cluster_result.rc == 0
+
+    - name: Wait for Kind cluster to be ready
+      command: kubectl wait --for=condition=Ready nodes --all --timeout=300s
+      args:
+        creates: /home/manojmenon/.kube/config
+
+    - name: Add Cilium Helm repository
+      command: helm repo add cilium https://helm.cilium.io/
+      args:
+        creates: /home/manojmenon/.kube/config
+
+    - name: Update Helm repositories
+      command: helm repo update
+      args:
+        creates: /home/manojmenon/.kube/config
+
+    - name: Install Cilium using Helm
+      command: >
+        helm install cilium cilium/cilium
+        --namespace kube-system
+        --set kubeProxyReplacement=strict
+        --set k8sServiceHost=kind-control-plane
+        --set k8sServicePort=6443
+        --set nodePort.enabled=true
+        --set hostPort.enabled=true
+        --set externalIPs.enabled=true
+        --set nodePort.enabled=true
+        --set hostPort.enabled=true
+        --set externalIPs.enabled=true
+        --set tunnel=vxlan
+        --set ipam.mode=kubernetes
+        --set enableIPv4Masquerade=true
+        --set enableIPv6Masquerade=false
+        --set hubble.enabled=true
+        --set hubble.relay.enabled=true
+        --set hubble.ui.enabled=true
+        --set hubble.ui.service.type=NodePort
+        --set hubble.ui.service.nodePort=32323
+        --wait
+      args:
+        creates: /home/manojmenon/.kube/config
+      register: cilium_helm_install_result
+
+    - name: Display Cilium Helm installation status
+      debug:
+        msg: "Cilium CNI installed successfully via Helm. Use 'helm list -n kube-system' to check status."
+      when: cilium_helm_install_result.rc == 0
+
+    - name: Wait for Cilium to be ready
+      command: kubectl wait --for=condition=Ready pods -l k8s-app=cilium -n kube-system --timeout=300s
+      args:
+        creates: /home/manojmenon/.kube/config
+
+    - name: Enable ClusterMesh
+      command: >
+        cilium clustermesh enable
+        --service-type=NodePort
+        --service-node-port=32324
+        --create-ca-secret
+        --wait
+      args:
+        creates: /home/manojmenon/.kube/config
+      register: clustermesh_enable_result
+
+    - name: Display ClusterMesh status
+      debug:
+        msg: "ClusterMesh enabled successfully. Use 'cilium clustermesh status' to check status."
+      when: clustermesh_enable_result.rc == 0
+
+    - name: Create ClusterMesh configuration directory
+      file:
+        path: /home/manojmenon/clustermesh
+        state: directory
+        mode: '0755'
+
+    - name: Generate ClusterMesh configuration
+      command: cilium clustermesh status --output=json
+      args:
+        creates: /home/manojmenon/.kube/config
+      register: clustermesh_status
+      changed_when: false
+
+    - name: Save ClusterMesh configuration
+      copy:
+        dest: /home/manojmenon/clustermesh/config.json
+        content: "{{ clustermesh_status.stdout }}"
+        mode: '0644'
+      when: clustermesh_status.stdout != ""
+    

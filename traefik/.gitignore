@@ -1,0 +1,43 @@
+# Traefik / TLS
+acme.json
+*.pem
+*.key
+*.crt
+*.p12
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.secret
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Docker
+.docker/
+
+# Wazuh / SIEM – generated certs and sensitive config (optional: uncomment if you don’t commit certs)
+# siem/wazuh/wazuh-docker/single-node/config/wazuh_indexer_ssl_certs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs and temp
+*.log
+tmp/
+temp/
+.cache/

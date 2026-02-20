@@ -1,0 +1,44 @@
+
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./acme.json:/etc/traefik/acme/acme.json
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    networks:
+      - traefik_net
+
+  app:
+    build: ./app1
+    container_name: app
+    restart: unless-stopped
+
+    networks:
+      - traefik_net
+
+  app2:
+    build: ./app2
+    container_name: app2
+    restart: unless-stopped
+
+    networks:
+      - traefik_net
+
+networks:
+  traefik_net:
+    name: traefik_net
+

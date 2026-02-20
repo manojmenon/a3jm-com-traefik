@@ -1,0 +1,169 @@
+http:
+  middlewares:
+    # Strip path prefix so backends see / instead of /wazuh or /portainer
+    strip-wazuh-prefix:
+      stripPrefix:
+        prefixes:
+          - "/wazuh"
+    strip-portainer-prefix:
+      stripPrefix:
+        prefixes:
+          - "/portainer"
+    # Redirect /wazuh and /portainer (no trailing slash) to /wazuh/ and /portainer/
+    redirect-wazuh-slash:
+      redirectRegex:
+        regex: "^https://([^/]+)/wazuh$"
+        replacement: "https://${1}/wazuh/"
+        permanent: true
+    redirect-portainer-slash:
+      redirectRegex:
+        regex: "^https://([^/]+)/portainer$"
+        replacement: "https://${1}/portainer/"
+        permanent: true
+    redirect-app1-slash:
+      redirectRegex:
+        regex: "^https://([^/]+)/app1$"
+        replacement: "https://${1}/app1/"
+        permanent: true
+    strip-app1-prefix:
+      stripPrefix:
+        prefixes:
+          - "/app1"
+    redirect-app2-slash:
+      redirectRegex:
+        regex: "^https://([^/]+)/app2$"
+        replacement: "https://${1}/app2/"
+        permanent: true
+    strip-app2-prefix:
+      stripPrefix:
+        prefixes:
+          - "/app2"
+    strip-new-prefix:
+      stripPrefix:
+        prefixes:
+          - "/new"
+
+  routers:
+    # Path-based access on a3jm.com (no CNAME needed); Wazuh uses server.basePath /wazuh
+    wazuh-via-path:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/wazuh`) || PathPrefix(`/wazuh/`))"
+      service: wazuh
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - redirect-wazuh-slash
+      priority: 200
+
+    portainer-via-path:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/portainer`) || PathPrefix(`/portainer/`))"
+      service: portainer
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - redirect-portainer-slash
+        - strip-portainer-prefix
+      priority: 200
+
+    # App at a3jm.com/app1 (replaces app.a3jm.com)
+    app-via-path:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/app1`) || PathPrefix(`/app1/`))"
+      service: app
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - redirect-app1-slash
+        - strip-app1-prefix
+      priority: 200
+
+    # app2 (app2/ server.js) at a3jm.com/app2, runs in Docker on port 4000
+    app2-via-path:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/app2`) || PathPrefix(`/app2/`))"
+      service: app2
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - redirect-app2-slash
+        - strip-app2-prefix
+      priority: 200
+
+    traefik-dashboard:
+      rule: "Host(`traefik.a3jm.com`)"
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # Wazuh dashboard (siem/wazuh/wazuh-docker/single-node; wazuh.dashboard on traefik_net)
+    wazuh-dashboard:
+      rule: "Host(`wazuh.a3jm.com`)"
+      service: wazuh
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # Portainer (portainer-server/ → host port 9443)
+    portainer-dashboard:
+      rule: "Host(`portainer.a3jm.com`)"
+      service: portainer
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # app2 backend at a3jm.com/new (same app2 container as /app2)
+    app-vm-new:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/new`) || PathPrefix(`/new/`))"
+      service: app2
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - strip-new-prefix
+      priority: 200
+
+  services:
+    app:
+      loadBalancer:
+        servers:
+          - url: "http://app:3000"
+
+    # app2 container (app2/ server.js on port 4000)
+    app2:
+      loadBalancer:
+        servers:
+          - url: "http://app2:4000"
+
+    # app2 when run on host (node server.js); use for a3jm.com/new if not using app2 container
+    myvm:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4000"
+
+    # Wazuh dashboard: wazuh.dashboard container on traefik_net (HTTPS on port 5601)
+    wazuh:
+      loadBalancer:
+        servers:
+          - url: "https://wazuh.dashboard:5601"
+        serversTransport: insecureTransport
+
+    # Portainer: same stack, container port 9443 (HTTPS)
+    portainer:
+      loadBalancer:
+        servers:
+          - url: "https://portainer:9443"
+        serversTransport: insecureTransport
+
+  serversTransports:
+    insecureTransport:
+      insecureSkipVerify: true
