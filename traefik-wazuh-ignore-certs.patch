@@ -1,0 +1,27 @@
+From 734c5e1b9d49b00ad4528afd56577c0ba2ea0bab Mon Sep 17 00:00:00 2001
+From: Manoj Menon <manojmenon.menon@gmail.com>
+Date: Fri, 20 Feb 2026 08:00:39 +0000
+Subject: [PATCH] Ignore generated Wazuh indexer SSL certs
+
+---
+ .gitignore | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/.gitignore b/.gitignore
+index 31bc423..ee04c36 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -2,4 +2,8 @@ single-node/config/wazuh_indexer_ssl_certs/*.pem
+ single-node/config/wazuh_indexer_ssl_certs/*.key
+ multi-node/config/wazuh_indexer_ssl_certs/*.pem
+ multi-node/config/wazuh_indexer_ssl_certs/*.key
+-*.log
+\ No newline at end of file
++*.log
++
++# Ignore entire certs directory to avoid committing generated certs
++single-node/config/wazuh_indexer_ssl_certs/
++**/wazuh_indexer_ssl_certs/
+-- 
+2.43.0
+
