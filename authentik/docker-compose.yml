@@ -1,0 +1,106 @@
+# Authentik – IdP at authentik.a3jm.com (behind main Traefik)
+# Persistence: Docker named volumes only (no host path)
+
+volumes:
+  authentik_database:
+  authentik_redis:
+  authentik_media:
+  authentik_templates:
+  authentik_certs:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: authentik-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-authentik}
+      POSTGRES_PASSWORD: ${PG_PASS:?Set PG_PASS in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-authentik}
+    volumes:
+      - authentik_database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authentik -d authentik"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - authentik
+
+  redis:
+    image: redis:alpine
+    container_name: authentik-redis
+    restart: unless-stopped
+    command: --save 60 1 --loglevel warning
+    volumes:
+      - authentik_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - authentik
+
+  server:
+    image: ghcr.io/goauthentik/server:2024.4.2
+    container_name: authentik-server
+    restart: unless-stopped
+    command: server
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?Set AUTHENTIK_SECRET_KEY in .env}
+      AUTHENTIK_POSTGRESQL__HOST: postgres
+      AUTHENTIK_POSTGRESQL__NAME: ${POSTGRES_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__USER: ${POSTGRES_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_COOKIE_DOMAIN: authentik.a3jm.com
+      AUTHENTIK_INSECURE: "false"
+      # Bootstrap akadmin on first run (empty DB only)
+      AUTHENTIK_BOOTSTRAP_PASSWORD: "StrongPassword123!"
+      AUTHENTIK_BOOTSTRAP_EMAIL: "ak-admin@localhost"
+    volumes:
+      - authentik_media:/media
+      - authentik_templates:/templates
+      - authentik_certs:/certs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - authentik
+      - traefik_net
+
+  worker:
+    image: ghcr.io/goauthentik/server:2024.4.2
+    container_name: authentik-worker
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      AUTHENTIK_POSTGRESQL__HOST: postgres
+      AUTHENTIK_POSTGRESQL__NAME: ${POSTGRES_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__USER: ${POSTGRES_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+      AUTHENTIK_REDIS__HOST: redis
+    volumes:
+      - authentik_media:/media
+      - authentik_templates:/templates
+      - authentik_certs:/certs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      server:
+        condition: service_started
+    networks:
+      - authentik
+
+networks:
+  authentik:
+    driver: bridge
+  traefik_net:
+    external: true

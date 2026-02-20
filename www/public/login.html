@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Zeal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="logo">Zeal</a>
+      <nav><a href="/">Home</a></nav>
+    </div>
+  </header>
+
+  <main class="auth-page">
+    <div class="container container-narrow">
+      <h1>Log in</h1>
+      <p class="auth-intro">Sign in with your account to access learning and labs.</p>
+      <form id="login-form" class="auth-form">
+        <div class="form-row">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-row">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submit-btn">Log in</button>
+        </div>
+        <div id="form-message" class="form-message" aria-live="polite"></div>
+      </form>
+      <p class="auth-footer">Don’t have an account? <a href="/register">Create account</a>.</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© Zeal. Tools learning & labs.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const form = document.getElementById("login-form");
+      const messageEl = document.getElementById("form-message");
+      const submitBtn = document.getElementById("submit-btn");
+      const next = new URLSearchParams(window.location.search).get("next") || "";
+
+      function showMessage(text, type) {
+        messageEl.textContent = text;
+        messageEl.className = "form-message " + (type === "error" ? "error" : "success");
+      }
+
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        messageEl.textContent = "";
+        messageEl.className = "form-message";
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Signing in…";
+        try {
+          const res = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({
+              email: form.email.value.trim(),
+              password: form.password.value,
+            }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            window.location.href = next && next.startsWith("/") ? next : data.redirect;
+          } else {
+            showMessage(data.message || "Login failed.", "error");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Log in";
+          }
+        } catch (err) {
+          showMessage("Network error. Please try again.", "error");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Log in";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

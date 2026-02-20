@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zeal – Tools Learning & Labs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside class="main-sidebar" id="main-sidebar">
+    <div class="sidebar-header">
+      <a href="/" class="logo">Zeal</a>
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">×</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">
+        <div class="sidebar-divider">Quick Links</div>
+        <a href="/wazuh/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Wazuh</a>
+        <a href="/portainer/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Portainer</a>
+        <a href="/pihole/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Pi-hole</a>
+        <a href="/app1/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">App1</a>
+        <a href="/app2/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">App2</a>
+        <a href="/traefik/dashboard/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Traefik</a>
+        <a href="https://netbird.a3jm.com/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Netbird</a>
+        <a href="/grafana/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Grafana</a>
+        <a href="/prometheus/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Prometheus</a>
+        <a href="https://authentik.a3jm.com/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Authentik</a>
+      </div>
+      <div class="sidebar-section" id="sidebar-user-links">
+        <!-- Dynamic user links will be inserted here -->
+      </div>
+    </nav>
+  </aside>
+
+  <div class="main-content-wrapper">
+    <header class="site-header">
+      <div class="container">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu">☰</button>
+        <a href="/" class="logo">Zeal</a>
+        <nav id="header-nav">
+          <a href="#about">About</a>
+          <a href="#labs">Labs</a>
+          <a href="#register">Get started</a>
+          <span id="auth-links"></span>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Tools learning that fits your goals</h1>
+        <p class="hero-lead">A tools learning website offering courses and hands-on labs. Learn by doing with guided labs and real environments.</p>
+        <a href="#register" class="btn btn-primary">Get started</a>
+      </div>
+    </section>
+
+    <section id="about" class="about">
+      <div class="container">
+        <h2>About our learning platform</h2>
+        <p class="about-text">Zeal is a <strong>tools learning website</strong> that offers structured learning and hands-on labs. Build practical skills through guided courses and lab environments you can use at your own pace.</p>
+        <ul class="about-list">
+          <li>Hands-on labs and real tooling</li>
+          <li>Self-paced learning paths</li>
+          <li>Guided courses and exercises</li>
+          <li>Topics from DevOps to security and automation</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="labs" class="schedule">
+      <div class="container">
+        <h2>Labs & learning</h2>
+        <p class="schedule-intro">Access guided labs and learning material to practice with real tools.</p>
+        <div class="schedule-grid">
+          <div class="schedule-card">
+            <span class="schedule-days">Learning paths</span>
+            <span class="schedule-time">Step-by-step courses</span>
+            <span class="schedule-label">Structured learning</span>
+          </div>
+          <div class="schedule-card">
+            <span class="schedule-days">Labs</span>
+            <span class="schedule-time">Hands-on practice</span>
+            <span class="schedule-label">Real environments</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="register" class="register">
+      <div class="container">
+        <h2>Get started</h2>
+        <p class="register-intro">Request access to learning and labs. We’ll get in touch with next steps.</p>
+        <form id="reg-form" class="reg-form">
+          <div class="form-row">
+            <label for="studentName">Your name *</label>
+            <input type="text" id="studentName" name="studentName" required placeholder="Full name" />
+          </div>
+          <div class="form-row">
+            <label for="guardianName">Organization or role (optional)</label>
+            <input type="text" id="guardianName" name="guardianName" placeholder="e.g. Team, Student" />
+          </div>
+          <div class="form-row">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" required placeholder="you@example.com" />
+          </div>
+          <div class="form-row">
+            <label for="phone">Phone (optional)</label>
+            <input type="tel" id="phone" name="phone" placeholder="Contact number" />
+          </div>
+          <div class="form-row">
+            <label for="grade">Area of interest *</label>
+            <input type="text" id="grade" name="grade" required placeholder="e.g. DevOps, Security, Automation" />
+          </div>
+          <div class="form-row">
+            <label for="subject">Topics or tools you want to learn *</label>
+            <input type="text" id="subject" name="subject" required placeholder="e.g. Docker, Linux, Traefik" />
+          </div>
+          <div class="form-row">
+            <label for="slot">Preferred way to learn *</label>
+            <select id="slot" name="slot" required>
+              <option value="">Select one</option>
+              <option value="Labs only">Labs only</option>
+              <option value="Learning paths">Learning paths</option>
+              <option value="Both">Both labs and learning paths</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="submit-btn">Request access</button>
+          </div>
+          <div id="form-message" class="form-message" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
+    </main>
+
+    <footer class="site-footer">
+    <div class="container">
+      <p>© Zeal. Tools learning & labs.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="auth-header.js"></script>
+  <script src="app.js"></script>
+  <script src="sidebar.js"></script>
+</body>
+</html>

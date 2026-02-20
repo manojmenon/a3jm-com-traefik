@@ -55,6 +55,38 @@ http:
       stripPrefix:
         prefixes:
           - "/traefik"
+    redirect-grafana-slash:
+      redirectRegex:
+        regex: "^https://([^/]+)/grafana$"
+        replacement: "https://${1}/grafana/"
+        permanent: true
+    strip-grafana-prefix:
+      stripPrefix:
+        prefixes:
+          - "/grafana"
+    redirect-prometheus-slash:
+      redirectRegex:
+        regex: "^https://([^/]+)/prometheus$"
+        replacement: "https://${1}/prometheus/"
+        permanent: true
+    strip-prometheus-prefix:
+      stripPrefix:
+        prefixes:
+          - "/prometheus"
+    # Netbird: ensure backend sees correct scheme/host/port for OAuth redirects (avoids "Unauthenticated")
+    netbird-forwarded-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+          X-Forwarded-Host: "netbird.a3jm.com"
+          X-Forwarded-Port: "443"
+          Forwarded: "proto=https;host=netbird.a3jm.com"
+    # Authentik: ensure backend sees correct scheme/host (subdomain authentik.a3jm.com)
+    authentik-forwarded-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+          X-Forwarded-Host: "authentik.a3jm.com"
     # Headers for Pi-hole (needs forwarded headers when behind proxy)
     pihole-headers:
       headers:
@@ -302,6 +334,73 @@ http:
         - strip-new-prefix
       priority: 200
 
+    # Netbird: subdomain netbird.a3jm.com
+    netbird-grpc:
+      rule: "Host(`netbird.a3jm.com`) && (PathPrefix(`/signalexchange.SignalExchange/`) || PathPrefix(`/management.ManagementService/`))"
+      service: netbird-server-h2c
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      priority: 200
+
+    netbird-backend:
+      rule: "Host(`netbird.a3jm.com`) && (PathPrefix(`/relay`) || PathPrefix(`/ws-proxy/`) || PathPrefix(`/api`) || PathPrefix(`/oauth2`) || PathPrefix(`/setup`) || PathPrefix(`/setup-keys`))"
+      service: netbird-server
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - netbird-forwarded-headers
+      priority: 200
+
+    netbird-dashboard:
+      rule: "Host(`netbird.a3jm.com`)"
+      service: netbird-dashboard
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      priority: 50
+
+    # Grafana – metrics dashboards (path-based: a3jm.com/grafana)
+    # No redirect middleware: avoid ERR_TOO_MANY_REDIRECTS (Grafana sends redirects that would loop)
+    grafana-via-path:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/grafana`) || PathPrefix(`/grafana/`))"
+      service: grafana
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - strip-grafana-prefix
+      priority: 200
+
+    # Prometheus – metrics UI (path-based: a3jm.com/prometheus)
+    prometheus-via-path:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/prometheus`) || PathPrefix(`/prometheus/`))"
+      service: prometheus
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - strip-prometheus-prefix
+      priority: 200
+
+    # Authentik – IdP at authentik.a3jm.com
+    authentik-dashboard:
+      rule: "Host(`authentik.a3jm.com`)"
+      service: authentik
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - authentik-forwarded-headers
+      priority: 100
+
   services:
     www:
       loadBalancer:
@@ -345,7 +444,43 @@ http:
       loadBalancer:
         servers:
           - url: "http://pihole:80"
-        
+
+    # Netbird dashboard (SPA)
+    netbird-dashboard:
+      loadBalancer:
+        servers:
+          - url: "http://netbird-dashboard:80"
+
+    # Netbird server HTTP (relay, ws-proxy, api, oauth2)
+    netbird-server:
+      loadBalancer:
+        servers:
+          - url: "http://netbird-server:80"
+
+    # Netbird server gRPC (HTTP/2 cleartext)
+    netbird-server-h2c:
+      loadBalancer:
+        servers:
+          - url: "h2c://netbird-server:80"
+        passHostHeader: true
+
+    # Grafana (port 3000 inside container)
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:3000"
+
+    # Prometheus (port 9090)
+    prometheus:
+      loadBalancer:
+        servers:
+          - url: "http://prometheus:9090"
+
+    # Authentik server (HTTP 9000)
+    authentik:
+      loadBalancer:
+        servers:
+          - url: "http://authentik-server:9000"
 
   serversTransports:
     insecureTransport:

@@ -1,0 +1,17 @@
+# Prometheus configuration – served behind Traefik at prometheus.a3jm.com
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Traefik metrics (if Traefik exposes /metrics)
+  # - job_name: traefik
+  #   static_configs:
+  #     - targets: ["traefik:8080"]
+
+  # Add more scrape targets (Docker, Node Exporter, etc.) as needed
