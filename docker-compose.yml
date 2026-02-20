@@ -1,0 +1,52 @@
+
+
+networks:
+  dns_net:
+    driver: bridge
+
+services:
+
+  unbound:
+    image: mvance/unbound:latest
+    container_name: unbound
+    restart: unless-stopped
+    networks:
+      - dns_net
+    volumes:
+      - ./unbound/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro
+    expose:
+      - "5335"
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    hostname: pihole
+    networks:
+      - dns_net
+
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      # DO NOT expose 80/443 directly (Traefik handles UI)
+
+    environment:
+      TZ: "Europe/Prague"   # change if needed
+      WEBPASSWORD: "ChangeThisPassword"
+      DNSMASQ_LISTENING: "all"
+      PIHOLE_DNS_: "unbound#5335"
+      FTLCONF_LOCAL_IPV4: "YOUR_SERVER_IP"
+
+    volumes:
+      - ./pihole/etc-pihole:/etc/pihole
+      - ./pihole/etc-dnsmasq.d:/etc/dnsmasq.d
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pihole.rule=Host(`pihole.yourdomain.local`)"
+      - "traefik.http.routers.pihole.entrypoints=websecure"
+      - "traefik.http.routers.pihole.tls=true"
+      - "traefik.http.services.pihole.loadbalancer.server.port=80"
+
+    depends_on:
+      - unbound

@@ -6,7 +6,7 @@
     .then((data) => {
       if (data.user) {
         if (data.user.role === "admin") {
-          el.innerHTML = '<a href="/admin">Admin</a> <a href="/" class="btn-logout">Logout</a>';
+          el.innerHTML = '<a href="/admin/dashboard">Admin</a> <a href="/" class="btn-logout">Logout</a>';
         } else {
           el.innerHTML = '<a href="/student">My area</a> <a href="/" class="btn-logout">Logout</a>';
         }

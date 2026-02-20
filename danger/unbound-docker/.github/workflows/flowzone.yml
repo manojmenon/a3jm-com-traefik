@@ -1,0 +1,45 @@
+name: Flowzone
+
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+    branches: [main, master]
+  pull_request_target:
+    types: [opened, synchronize, closed]
+    branches: [main, master]
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  flowzone:
+    name: Flowzone
+    uses: product-os/flowzone/.github/workflows/flowzone.yml@3876dfb91f03285851a3d2c726f1662773c463ae # v22.8.9
+    # prevent duplicate workflow executions for pull_request and pull_request_target
+    if: |
+      (
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event_name == 'pull_request'
+      ) || (
+        github.event.pull_request.head.repo.full_name != github.repository &&
+        github.event_name == 'pull_request_target'
+      ) || (
+        github.event_name == 'push'
+      )
+    secrets:
+      GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      DOCKERHUB_USER: ${{ secrets.DOCKER_REGISTRY_USER }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKER_REGISTRY_PASS }}
+    with:
+      disable_versioning: true
+      docker_images: |
+        ghcr.io/klutchell/unbound,
+        klutchell/unbound
+      toggle_auto_merge: false
+      docker_runs_on: >
+        {
+          "linux/amd64": ["ubuntu-24.04"],
+          "linux/arm64": ["ubuntu-24.04-arm"],
+          "linux/arm/v7": ["ubuntu-24.04-arm"],
+          "linux/arm/v6": ["ubuntu-24.04-arm"]
+        }

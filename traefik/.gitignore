@@ -41,3 +41,16 @@ Thumbs.db
 tmp/
 temp/
 .cache/
+
+# Pi-hole – adlists and data files
+**/pihole/**/adlists.list
+**/pihole/**/adlists.*
+**/pihole/**/gravity.db
+**/pihole/**/custom.list
+**/pihole/**/whitelist.txt
+**/pihole/**/blacklist.txt
+**/pihole/**/regex.list
+**/pihole/**/local.list
+**/pihole/etc-pihole/
+**/pihole/etc-dnsmasq.d/
+pihole/

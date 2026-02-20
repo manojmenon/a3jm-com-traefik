@@ -20,6 +20,11 @@ http:
         regex: "^https://([^/]+)/portainer$"
         replacement: "https://${1}/portainer/"
         permanent: true
+    redirect-pihole-slash:
+      redirectRegex:
+        regex: "^https://([^/]+)/pihole$"
+        replacement: "https://${1}/pihole/"
+        permanent: true
     redirect-app1-slash:
       redirectRegex:
         regex: "^https://([^/]+)/app1$"
@@ -42,6 +47,31 @@ http:
       stripPrefix:
         prefixes:
           - "/new"
+    strip-pihole-prefix:
+      stripPrefix:
+        prefixes:
+          - "/pihole"
+    strip-traefik-prefix:
+      stripPrefix:
+        prefixes:
+          - "/traefik"
+    # Headers for Pi-hole (needs forwarded headers when behind proxy)
+    pihole-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+          X-Forwarded-Host: "a3jm.com"
+          X-Forwarded-Prefix: "/pihole"
+    # Rewrite /login to /admin/login.php for Pi-hole redirects
+    replace-path-pihole-login:
+      replacePathRegex:
+        regex: "^/login$"
+        replacement: "/admin/login.php"
+    # Add /admin prefix for Pi-hole when accessing /admin directly (rewrite to /admin/index.php)
+    add-pihole-admin-prefix:
+      replacePathRegex:
+        regex: "^/admin$"
+        replacement: "/admin/index.php"
 
   routers:
     # Main site: a3jm.com and www.a3jm.com (priority 50 so path-based routes below take precedence)
@@ -63,7 +93,81 @@ http:
         certResolver: letsencrypt
       priority: 50
 
-    # Path-based access on a3jm.com (no CNAME needed); Wazuh uses server.basePath /wazuh
+    # Pi-hole via subdomain (cleaner than path-based, avoids conflicts)
+    pihole-dashboard:
+      rule: "Host(`pihole.a3jm.com`)"
+      service: pihole
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+    
+    # Path-based Pi-hole access - catch Pi-hole API and redirects first (highest priority)
+    # Catch Pi-hole API calls (/api/* but exclude our www app's /api/login, /api/register, etc. and Traefik API paths)
+    pihole-api:
+      rule: "Host(`a3jm.com`) && PathPrefix(`/api`) && !Path(`/api/login`) && !Path(`/api/logout`) && !Path(`/api/register`) && !Path(`/api/register-account`) && !Path(`/api/me`) && !Path(`/api/health`) && !PathPrefix(`/api/admin`) && !PathPrefix(`/api/http`) && !PathPrefix(`/api/rawdata`) && !PathPrefix(`/api/entrypoints`) && !PathPrefix(`/api/version`) && !PathPrefix(`/api/overview`) && !Path(`/api/status`) && !PathPrefix(`/api/tcp`) && !PathPrefix(`/api/udp`)"
+      service: pihole
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - pihole-headers
+      priority: 300
+    
+    # Catch Pi-hole static assets
+    pihole-assets:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/admin/scripts`) || PathPrefix(`/admin/css`) || PathPrefix(`/admin/js`) || PathPrefix(`/admin/img`) || PathPrefix(`/admin/vendor`))"
+      service: pihole
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - pihole-headers
+      priority: 300
+    
+    # Catch Pi-hole admin pages (including /admin exact path, but exclude our www app's /admin/dashboard and /admin/registrations)
+    # This must have higher priority than www app's /admin route
+    # Note: We catch /admin and rewrite to /admin/index.php for Pi-hole
+    pihole-admin-paths:
+      rule: "Host(`a3jm.com`) && PathPrefix(`/admin`) && !PathPrefix(`/admin/dashboard`) && !PathPrefix(`/admin/registrations`)"
+      service: pihole
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - pihole-headers
+        - add-pihole-admin-prefix
+      priority: 400
+    
+    # Catch Pi-hole login.php and index.php (but not our www app's /login)
+    pihole-php-files:
+      rule: "Host(`a3jm.com`) && (Path(`/login.php`) || Path(`/index.php`))"
+      service: pihole
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - pihole-headers
+      priority: 300
+    
+    
+    # Main Pi-hole path route
+    pihole-via-path:
+      rule: "Host(`a3jm.com`) && PathPrefix(`/pihole`)"
+      service: pihole
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - pihole-headers
+        - strip-pihole-prefix
+      priority: 200
+
     wazuh-via-path:
       rule: "Host(`a3jm.com`) && (PathPrefix(`/wazuh`) || PathPrefix(`/wazuh/`))"
       service: wazuh
@@ -120,6 +224,53 @@ http:
         - websecure
       tls:
         certResolver: letsencrypt
+
+    # Traefik dashboard via path (a3jm.com/traefik)
+    # Catch Traefik-specific API paths that the dashboard calls
+    traefik-api-via-path:
+      rule: "Host(`a3jm.com`) && PathPrefix(`/traefik/api`)"
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - strip-traefik-prefix
+      priority: 300
+
+    # Catch Traefik API calls from dashboard (dashboard calls /api/http/*, /api/rawdata, etc.)
+    # Exclude www app and Pi-hole API paths
+    # Higher priority (350) than Pi-hole (300) to catch Traefik API paths first
+    traefik-api-direct:
+      rule: "Host(`a3jm.com`) && (PathPrefix(`/api/http`) || PathPrefix(`/api/rawdata`) || PathPrefix(`/api/entrypoints`) || PathPrefix(`/api/version`) || PathPrefix(`/api/overview`) || Path(`/api/status`) || PathPrefix(`/api/tcp`) || PathPrefix(`/api/udp`))"
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      priority: 350
+
+    traefik-dashboard-via-path:
+      rule: "Host(`a3jm.com`) && PathPrefix(`/traefik/dashboard`)"
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - strip-traefik-prefix
+      priority: 300
+
+    traefik-via-path:
+      rule: "Host(`a3jm.com`) && PathPrefix(`/traefik`)"
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - strip-traefik-prefix
+      priority: 200
 
     # Wazuh dashboard (siem/wazuh/wazuh-docker/single-node; wazuh.dashboard on traefik_net)
     wazuh-dashboard:
@@ -187,6 +338,14 @@ http:
         servers:
           - url: "https://portainer:9443"
         serversTransport: insecureTransport
+
+
+    # Pi-hole: container on traefik_net, HTTP on port 80
+    pihole:
+      loadBalancer:
+        servers:
+          - url: "http://pihole:80"
+        
 
   serversTransports:
     insecureTransport:

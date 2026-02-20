@@ -27,3 +27,16 @@ traefik/siem/wazuh/wazuh-docker/single-node/config/wazuh_indexer_ssl_certs/
 **/wazuh_indexer_ssl_certs/
 
 single-node/config/wazuh_indexer_ssl_certs
+
+# Pi-hole – adlists and data files
+pihole/etc-pihole/adlists.list
+pihole/etc-pihole/adlists.*
+pihole/etc-pihole/gravity.db
+pihole/etc-pihole/custom.list
+pihole/etc-pihole/whitelist.txt
+pihole/etc-pihole/blacklist.txt
+pihole/etc-pihole/regex.list
+pihole/etc-pihole/local.list
+pihole/etc-pihole/
+pihole/etc-dnsmasq.d/
+pihole/

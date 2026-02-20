@@ -1,0 +1,62 @@
+volumes:
+  pihole:
+
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - '53:53/tcp'
+      - '53:53/udp'
+      - '67:67/udp' # Required if you are using Pihole as your DHCP server
+      - '9080:80/tcp' # Required if you are using Pihole as your DHCP server
+      - '14443:443/tcp' # Required if you are using Pihole as your DHCP server
+    networks:
+      - default
+      - traefik_net
+    environment:
+      # Sets upstream DNS to unbound sibling container
+      FTLCONF_dns_upstreams: unbound
+      # If using Docker's default `bridge` network setting the dns listening mode should be set to 'all'
+      FTLCONF_dns_listeningMode: all
+      # Set the appropriate timezone for your location
+      # See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      # e.g. Europe/Paris, US/Pacific, Asia/Tokyo
+      TZ: 'Europe/Prague'
+      # See https://github.com/pi-hole/docker-pi-hole for all options
+      WEBPASSWORD: "strongpass"
+      PIHOLE_DNS_: "unbound#5335"
+      DNSMASQ_LISTENING: "all"
+
+    volumes:
+      - 'pihole:/etc/pihole'
+    cap_add:
+      - NET_ADMIN # Required if you are using Pi-hole as your DHCP server
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pihole.rule=Host(`pihole.home.local`)"
+      - "traefik.http.routers.pihole.entrypoints=websecure"
+      - "traefik.http.routers.pihole.tls=true"
+      - "traefik.http.services.pihole.loadbalancer.server.port=80"
+
+  unbound:
+    image: klutchell/unbound
+    networks:
+      - default
+    healthcheck:
+      # Use the drill wrapper binary to reduce the exit codes to 0 or 1 for healthchecks
+      test: ['CMD', 'drill-hc', '@127.0.0.1', 'dnssec.works']
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - /path/to/config:/etc/unbound/custom.conf.d
+    restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge
+  traefik_net:
+    external: true

@@ -10,19 +10,42 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="site-header">
-    <div class="container">
+  <aside class="main-sidebar" id="main-sidebar">
+    <div class="sidebar-header">
       <a href="/" class="logo">A3JM</a>
-      <nav id="header-nav">
-        <a href="#about">About</a>
-        <a href="#schedule">Schedule</a>
-        <a href="#register">Register</a>
-        <span id="auth-links"></span>
-      </nav>
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">×</button>
     </div>
-  </header>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">
+        <div class="sidebar-divider">Quick Links</div>
+        <a href="/wazuh/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Wazuh</a>
+        <a href="/portainer/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Portainer</a>
+        <a href="/pihole/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Pi-hole</a>
+        <a href="/app1/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">App1</a>
+        <a href="/app2/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">App2</a>
+        <a href="/traefik/dashboard/" target="_blank" rel="noopener" class="sidebar-nav-item sidebar-nav-external">Traefik</a>
+      </div>
+      <div class="sidebar-section" id="sidebar-user-links">
+        <!-- Dynamic user links will be inserted here -->
+      </div>
+    </nav>
+  </aside>
 
-  <main>
+  <div class="main-content-wrapper">
+    <header class="site-header">
+      <div class="container">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu">☰</button>
+        <a href="/" class="logo">A3JM</a>
+        <nav id="header-nav">
+          <a href="#about">About</a>
+          <a href="#schedule">Schedule</a>
+          <a href="#register">Register</a>
+          <span id="auth-links"></span>
+        </nav>
+      </div>
+    </header>
+
+    <main>
     <section class="hero">
       <div class="container">
         <h1>Weekend tuition that fits your life</h1>
@@ -109,15 +132,17 @@
         </form>
       </div>
     </section>
-  </main>
+    </main>
 
-  <footer class="site-footer">
+    <footer class="site-footer">
     <div class="container">
       <p>© A3JM. Weekend voluntary tuition classes.</p>
-    </div>
-  </footer>
+      </div>
+    </footer>
+  </div>
 
   <script src="auth-header.js"></script>
   <script src="app.js"></script>
+  <script src="sidebar.js"></script>
 </body>
 </html>

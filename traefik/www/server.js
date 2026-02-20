@@ -187,8 +187,13 @@ app.get("/student", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "student.html"));
 });
 
-app.get("/admin", requireAdmin, (req, res) => {
+app.get("/admin/dashboard", requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+// Redirect /admin to /admin/dashboard for our app (but Pi-hole will catch /admin first via Traefik)
+app.get("/admin", requireAdmin, (req, res) => {
+  res.redirect("/admin/dashboard");
 });
 
 // —— Admin: list registrations (optional) ——
@@ -210,7 +215,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/about", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-app.get("/schedule", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html"));
+app.get("/schedule", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));

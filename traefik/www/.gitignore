@@ -1,0 +1,12 @@
+# Database data (persistent storage)
+data/postgres/
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+
+# Node (if any local development)
+node_modules/

@@ -21,7 +21,7 @@ services:
       - POSTGRES_PASSWORD=a3jm_secret
       - POSTGRES_DB=a3jm
     volumes:
-      - www_db_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U a3jm -d a3jm"]
@@ -34,7 +34,3 @@ services:
 networks:
   traefik_net:
     external: true
-
-volumes:
-  www_db_data:
-    name: www_db_data
