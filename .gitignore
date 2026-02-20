@@ -26,7 +26,8 @@ id_rsa
 traefik/siem/wazuh/wazuh-docker/
 **/wazuh-docker/
 
-# Pi-hole – adlists and data files
+# Pi-hole – adlists and data files (and old/backup copy)
+pihole-old/
 pihole/etc-pihole/adlists.list
 pihole/etc-pihole/adlists.*
 pihole/etc-pihole/gravity.db
