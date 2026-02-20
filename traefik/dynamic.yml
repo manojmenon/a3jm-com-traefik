@@ -44,6 +44,25 @@ http:
           - "/new"
 
   routers:
+    # Main site: a3jm.com and www.a3jm.com (priority 50 so path-based routes below take precedence)
+    www-default:
+      rule: "Host(`a3jm.com`)"
+      service: www
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      priority: 50
+
+    www-www:
+      rule: "Host(`www.a3jm.com`)"
+      service: www
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      priority: 50
+
     # Path-based access on a3jm.com (no CNAME needed); Wazuh uses server.basePath /wazuh
     wazuh-via-path:
       rule: "Host(`a3jm.com`) && (PathPrefix(`/wazuh`) || PathPrefix(`/wazuh/`))"
@@ -133,6 +152,11 @@ http:
       priority: 200
 
   services:
+    www:
+      loadBalancer:
+        servers:
+          - url: "http://www:3000"
+
     app:
       loadBalancer:
         servers:

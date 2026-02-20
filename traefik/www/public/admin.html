@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | A3JM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="admin-body">
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-header">
+      <a href="/" class="logo">A3JM</a>
+      <span class="admin-badge">Admin</span>
+    </div>
+    <nav class="admin-nav">
+      <a href="#" class="admin-nav-item active" data-view="dashboard">Dashboard</a>
+      <a href="#" class="admin-nav-item" data-view="registrations">Registrations</a>
+      <div class="admin-nav-divider">Tools</div>
+      <a href="/wazuh/" target="_blank" rel="noopener" class="admin-nav-item admin-nav-external">Wazuh</a>
+      <a href="/portainer/" target="_blank" rel="noopener" class="admin-nav-item admin-nav-external">Portainer</a>
+      <a href="/app1/" target="_blank" rel="noopener" class="admin-nav-item admin-nav-external">App1</a>
+      <a href="/app2/" target="_blank" rel="noopener" class="admin-nav-item admin-nav-external">App2</a>
+      <a href="https://traefik.a3jm.com" target="_blank" rel="noopener" class="admin-nav-item admin-nav-external">Traefik</a>
+    </nav>
+    <div class="admin-sidebar-footer">
+      <a href="/" class="admin-nav-item">Back to site</a>
+      <button type="button" class="btn btn-outline btn-logout-admin">Logout</button>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <h1 id="admin-title">Dashboard</h1>
+    </header>
+    <div id="admin-content" class="admin-content">
+      <div id="view-dashboard" class="admin-view">
+        <p class="admin-welcome">Welcome to the admin panel. Use the menu on the left to open tools or view registrations.</p>
+        <ul class="admin-quicklinks">
+          <li><a href="/wazuh/" target="_blank" rel="noopener">Wazuh</a> – SIEM dashboard</li>
+          <li><a href="/portainer/" target="_blank" rel="noopener">Portainer</a> – Docker management</li>
+          <li><a href="/app1/" target="_blank" rel="noopener">App1</a></li>
+          <li><a href="/app2/" target="_blank" rel="noopener">App2</a></li>
+          <li><a href="https://traefik.a3jm.com" target="_blank" rel="noopener">Traefik</a> – Reverse proxy dashboard</li>
+        </ul>
+      </div>
+      <div id="view-registrations" class="admin-view" hidden>
+        <div class="admin-toolbar">
+          <button type="button" id="btn-refresh-reg" class="btn btn-outline">Refresh</button>
+        </div>
+        <div id="registrations-table-wrap" class="admin-table-wrap">
+          <p id="registrations-loading">Loading…</p>
+          <table id="registrations-table" class="admin-table" hidden>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Guardian</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Grade</th>
+                <th>Subject</th>
+                <th>Slot</th>
+              </tr>
+            </thead>
+            <tbody id="registrations-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const content = document.getElementById("admin-content");
+      const titleEl = document.getElementById("admin-title");
+      const navItems = document.querySelectorAll(".admin-nav-item[data-view]");
+      const views = document.querySelectorAll(".admin-view");
+
+      navItems.forEach(function (item) {
+        item.addEventListener("click", function (e) {
+          if (item.classList.contains("admin-nav-external")) return;
+          e.preventDefault();
+          const view = item.getAttribute("data-view");
+          navItems.forEach(function (n) { n.classList.remove("active"); });
+          item.classList.add("active");
+          views.forEach(function (v) {
+            v.hidden = v.id !== "view-" + view;
+          });
+          titleEl.textContent = view === "registrations" ? "Registrations" : "Dashboard";
+          if (view === "registrations") loadRegistrations();
+        });
+      });
+
+      function loadRegistrations() {
+        const loading = document.getElementById("registrations-loading");
+        const table = document.getElementById("registrations-table");
+        const tbody = document.getElementById("registrations-tbody");
+        loading.hidden = false;
+        table.hidden = true;
+        fetch("/api/admin/registrations", { credentials: "same-origin" })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            loading.hidden = true;
+            if (!data.registrations || data.registrations.length === 0) {
+              tbody.innerHTML = "<tr><td colspan='8'>No registrations yet.</td></tr>";
+            } else {
+              tbody.innerHTML = data.registrations.map(function (row) {
+                const d = new Date(row.created_at);
+                const dateStr = d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                return "<tr><td>" + dateStr + "</td><td>" + escapeHtml(row.student_name) + "</td><td>" + escapeHtml(row.guardian_name) + "</td><td>" + escapeHtml(row.email) + "</td><td>" + escapeHtml(row.phone) + "</td><td>" + escapeHtml(row.grade) + "</td><td>" + escapeHtml(row.subject) + "</td><td>" + escapeHtml(row.slot) + "</td></tr>";
+              }).join("");
+            }
+            table.hidden = false;
+          })
+          .catch(function () {
+            loading.textContent = "Failed to load registrations.";
+            loading.hidden = false;
+          });
+      }
+
+      function escapeHtml(s) {
+        if (s == null) return "";
+        var div = document.createElement("div");
+        div.textContent = s;
+        return div.innerHTML;
+      }
+
+      document.getElementById("btn-refresh-reg").addEventListener("click", loadRegistrations);
+      document.querySelector(".btn-logout-admin").addEventListener("click", function () {
+        fetch("/api/logout", { method: "POST", credentials: "same-origin" }).then(function () {
+          window.location.href = "/";
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

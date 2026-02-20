@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register account | A3JM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="logo">A3JM</a>
+      <nav><a href="/">Home</a> <a href="/login">Login</a></nav>
+    </div>
+  </header>
+
+  <main class="auth-page">
+    <div class="container container-narrow">
+      <h1>Create student account</h1>
+      <p class="auth-intro">Register an account to sign in and manage your class registrations.</p>
+      <form id="register-form" class="auth-form">
+        <div class="form-row">
+          <label for="fullName">Full name (optional)</label>
+          <input type="text" id="fullName" name="fullName" placeholder="Your name" autocomplete="name" />
+        </div>
+        <div class="form-row">
+          <label for="email">Email *</label>
+          <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-row">
+          <label for="password">Password * (min 8 characters)</label>
+          <input type="password" id="password" name="password" required minlength="8" placeholder="••••••••" autocomplete="new-password" />
+        </div>
+        <div class="form-row">
+          <label for="password2">Confirm password *</label>
+          <input type="password" id="password2" name="password2" required minlength="8" placeholder="••••••••" autocomplete="new-password" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submit-btn">Create account</button>
+        </div>
+        <div id="form-message" class="form-message" aria-live="polite"></div>
+      </form>
+      <p class="auth-footer">Already have an account? <a href="/login">Log in</a>.</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© A3JM. Weekend voluntary tuition classes.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const form = document.getElementById("register-form");
+      const messageEl = document.getElementById("form-message");
+      const submitBtn = document.getElementById("submit-btn");
+
+      function showMessage(text, type) {
+        messageEl.textContent = text;
+        messageEl.className = "form-message " + (type === "error" ? "error" : "success");
+      }
+
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        if (form.password.value !== form.password2.value) {
+          showMessage("Passwords do not match.", "error");
+          return;
+        }
+        messageEl.textContent = "";
+        messageEl.className = "form-message";
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Creating account…";
+        try {
+          const res = await fetch("/api/register-account", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({
+              email: form.email.value.trim(),
+              password: form.password.value,
+              fullName: form.fullName.value.trim() || undefined,
+            }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            showMessage(data.message + " Redirecting to login…", "success");
+            setTimeout(function () {
+              window.location.href = "/login";
+            }, 1500);
+          } else {
+            showMessage(data.message || "Registration failed.", "error");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Create account";
+          }
+        } catch (err) {
+          showMessage("Network error. Please try again.", "error");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Create account";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

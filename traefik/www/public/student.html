@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student area | A3JM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="logo">A3JM</a>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/#register">Register for classes</a>
+        <a href="/" id="logout-link" class="btn-logout">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="student-dashboard">
+      <div class="container">
+        <h1>Student area</h1>
+        <p class="student-welcome">You are logged in. You can register for weekend tuition classes below or from the home page.</p>
+        <a href="/#register" class="btn btn-primary">Register for a class</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© A3JM. Weekend voluntary tuition classes.</p>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("logout-link").addEventListener("click", function (e) {
+      e.preventDefault();
+      fetch("/api/logout", { method: "POST", credentials: "same-origin" }).then(function () {
+        window.location.href = "/";
+      });
+    });
+  </script>
+</body>
+</html>
