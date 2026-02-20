@@ -22,11 +22,9 @@ id_rsa
 # OS files
 .DS_Store
 
-# Wazuh indexer SSL certs (avoid committing generated certs)
-traefik/siem/wazuh/wazuh-docker/single-node/config/wazuh_indexer_ssl_certs/
-**/wazuh_indexer_ssl_certs/
-
-single-node/config/wazuh_indexer_ssl_certs
+# Wazuh Docker directory (ignore entire directory)
+traefik/siem/wazuh/wazuh-docker/
+**/wazuh-docker/
 
 # Pi-hole – adlists and data files
 pihole/etc-pihole/adlists.list

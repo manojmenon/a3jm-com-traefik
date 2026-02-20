@@ -77,7 +77,7 @@ app.post("/api/login", async (req, res) => {
     return res.json({
       success: true,
       role: user.role,
-      redirect: user.role === "admin" ? "/admin" : "/student",
+      redirect: user.role === "admin" ? "/admin/dashboard" : "/student",
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -170,7 +170,7 @@ app.post("/api/register", async (req, res) => {
 // —— Protected pages (serve HTML) ——
 app.get("/login", (req, res) => {
   if (req.session?.userId) {
-    return res.redirect(req.session.role === "admin" ? "/admin" : "/student");
+    return res.redirect(req.session.role === "admin" ? "/admin/dashboard" : "/student");
   }
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
@@ -183,7 +183,7 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/student", requireAuth, (req, res) => {
-  if (req.session.role === "admin") return res.redirect("/admin");
+  if (req.session.role === "admin") return res.redirect("/admin/dashboard");
   res.sendFile(path.join(__dirname, "public", "student.html"));
 });
 
